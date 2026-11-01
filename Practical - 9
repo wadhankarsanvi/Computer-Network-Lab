@@ -1,0 +1,172 @@
+Traffic Shaping algorithms in C – the two classic ones are:
+ Leaky Bucket algorithm
+ Token Bucket algorithm
+1.	Algorithm: Leaky Bucket
+Input:
+•	Bucket capacity B
+•	Outgoing rate R
+•	Number of time units N
+•	Number of incoming packets in each time unit P[i]
+
+Algorithm steps:
+1.	Initialize:
+o	Set stored = 0 // number of packets currently in bucket
+2.	For each time unit i from 1 to N:
+a. Read number of incoming packets P[i]
+b. Check if stored + P[i] > B
+o	If yes:
+	Packet overflow = stored + P[i] - B
+	Drop the overflow packets
+	Set stored = B
+o	Else:
+	stored = stored + P[i]
+c. If stored <= R:
+o	Send all packets (stored)
+o	stored = 0
+d. Else:
+o	Send R packets
+o	stored = stored - R
+e. Print number of packets sent and packets left in bucket
+3.	After all time units:
+o	While stored > 0:
+	If stored <= R:
+	Send all remaining packets
+	stored = 0
+	Else:
+	Send R packets
+	stored = stored - R
+4.	End
+•	Fixed output rate R
+•	Excess incoming packets beyond capacity B are dropped
+•	Smoothens bursty input to fixed output rate
+
+ Leaky Bucket Algorithm (C Program)
+This simulates a fixed-rate outflow of packets, buffering bursty input.
+#include <stdio.h>
+
+int main() {
+    int bucket_size, n, i, incoming, outgoing, stored = 0;
+
+    printf("Leaky Bucket Algorithm Simulation\n");
+    printf("Enter bucket size (capacity): ");
+    scanf("%d", &bucket_size);
+    printf("Enter outgoing rate: ");
+    scanf("%d", &outgoing);
+    printf("Enter number of packets (time units): ");
+    scanf("%d", &n);
+
+    for(i=0; i<n; i++) {
+        printf("\nTime unit %d:\n", i+1);
+        printf("Enter number of incoming packets: ");
+        scanf("%d", &incoming);
+
+        if(incoming + stored > bucket_size) {
+            printf("Bucket overflow! Packet loss = %d\n", incoming + stored - bucket_size);
+            stored = bucket_size;
+        } else {
+            stored += incoming;
+        }
+
+        if(stored <= outgoing) {
+            printf("Packets sent: %d\n", stored);
+            stored = 0;
+        } else {
+            printf("Packets sent: %d\n", outgoing);
+            stored -= outgoing;
+        }
+
+        printf("Packets remaining in bucket: %d\n", stored);
+    }
+
+    // Drain remaining packets
+    while(stored > 0) {
+        printf("\nDraining remaining packets...\n");
+        if(stored <= outgoing) {
+            printf("Packets sent: %d\n", stored);
+            stored = 0;
+        } else {
+            printf("Packets sent: %d\n", outgoing);
+            stored -= outgoing;
+        }
+        printf("Packets left in bucket: %d\n", stored);
+    }
+
+    printf("\nSimulation complete.\n");
+    return 0;
+}
+2.	Algorithm: Token Bucket
+Input:
+•	Bucket capacity B (max tokens)
+•	Token generation rate R (tokens added per time unit)
+•	Number of time units N
+•	Number of packets to send in each time unit P[i]
+ 
+Algorithm steps:
+1.	Initialize:
+o	Set tokens = 0 // current number of tokens
+2.	For each time unit i from 1 to N:
+a. Add R tokens: tokens = tokens + R
+b. If tokens > B:
+o	tokens = B
+c. Read number of packets to send P[i]
+d. If tokens >= P[i]:
+o	Send P[i] packets
+o	tokens = tokens - P[i]
+e. Else:
+o	Send tokens packets
+o	Packets dropped = P[i] - tokens
+o	tokens = 0
+f. Print packets sent, tokens left, and packets dropped
+3.	End
+•	Allows bursty traffic if enough tokens are available
+•	Tokens accumulate up to capacity B
+•	Packets sent depend on available tokens; excess packets are dropped
+
+ Token Bucket Algorithm (C Program)
+This allows burstiness controlled by tokens.
+#include <stdio.h>
+
+int main() {
+    int bucket_size, n, rate, tokens = 0, incoming, i;
+
+    printf("Token Bucket Algorithm Simulation\n");
+    printf("Enter bucket size (capacity): ");
+    scanf("%d", &bucket_size);
+    printf("Enter token generation rate: ");
+    scanf("%d", &rate);
+    printf("Enter number of packets (time units): ");
+    scanf("%d", &n);
+
+    for(i=0; i<n; i++) {
+        printf("\nTime unit %d:\n", i+1);
+
+        tokens += rate;
+        if(tokens > bucket_size) tokens = bucket_size;
+
+        printf("Enter number of packets to send: ");
+        scanf("%d", &incoming);
+
+        if(tokens >= incoming) {
+            printf("Packets sent: %d\n", incoming);
+            tokens -= incoming;
+        } else {
+            printf("Only %d tokens available, packets sent: %d, packets dropped: %d\n",
+                    tokens, tokens, incoming - tokens);
+            tokens = 0;
+        }
+
+        printf("Tokens left: %d\n", tokens);
+    }
+
+    printf("\nSimulation complete.\n");
+    return 0;
+}
+To compile & run (same for both):
+gcc leaky_bucket.c -o leaky
+./leaky
+or
+gcc token_bucket.c -o token
+./token
+Explanation Leaky bucket keeps fixed outflow, dropping excess.
+•	Token bucket allows bursts as long as tokens are available.
+
